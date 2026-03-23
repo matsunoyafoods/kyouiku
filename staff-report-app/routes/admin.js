@@ -106,26 +106,51 @@ router.put('/stores/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// DELETE /api/admin/staff/:id — スタッフ無効化（論理削除）
+// DELETE /api/admin/staff/:id — スタッフ削除（関連データも削除）
 router.delete('/staff/:id', (req, res) => {
-  const db = getDB();
-  const staff = db.prepare('SELECT id, name FROM staff WHERE id = ?').get(req.params.id);
-  if (!staff) return res.status(404).json({ error: 'スタッフが見つかりません' });
-  db.prepare('UPDATE staff SET is_active = 0 WHERE id = ?').run(req.params.id);
-  res.json({ success: true, message: `${staff.name}を削除しました` });
+  try {
+    const db = getDB();
+    const staff = db.prepare('SELECT id, name FROM staff WHERE id = ?').get(req.params.id);
+    if (!staff) return res.status(404).json({ error: 'スタッフが見つかりません' });
+
+    const tx = db.transaction(() => {
+      // フィードバック → レポート → スタッフの順で削除
+      db.prepare('DELETE FROM feedbacks WHERE staff_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM reports WHERE staff_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM staff WHERE id = ?').run(req.params.id);
+    });
+    tx();
+
+    res.json({ success: true, message: `${staff.name}を削除しました` });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// DELETE /api/admin/stores/:id — 店舗削除
+// DELETE /api/admin/stores/:id — 店舗削除（関連データも削除）
 router.delete('/stores/:id', (req, res) => {
-  const db = getDB();
-  const store = db.prepare('SELECT id, name FROM stores WHERE id = ?').get(req.params.id);
-  if (!store) return res.status(404).json({ error: '店舗が見つかりません' });
-  const activeStaff = db.prepare('SELECT COUNT(*) as count FROM staff WHERE store_id = ? AND is_active = 1').get(req.params.id);
-  if (activeStaff.count > 0) {
-    return res.status(400).json({ error: `${store.name}にはまだ${activeStaff.count}名のスタッフがいます。先にスタッフを削除してください。` });
+  try {
+    const db = getDB();
+    const store = db.prepare('SELECT id, name FROM stores WHERE id = ?').get(req.params.id);
+    if (!store) return res.status(404).json({ error: '店舗が見つかりません' });
+
+    const tx = db.transaction(() => {
+      // 店舗のスタッフに紐づくデータを全削除
+      const staffIds = db.prepare('SELECT id FROM staff WHERE store_id = ?').all(req.params.id).map(s => s.id);
+      for (const sid of staffIds) {
+        db.prepare('DELETE FROM feedbacks WHERE staff_id = ?').run(sid);
+        db.prepare('DELETE FROM reports WHERE staff_id = ?').run(sid);
+      }
+      db.prepare('DELETE FROM staff WHERE store_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM line_notifications WHERE store_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM stores WHERE id = ?').run(req.params.id);
+    });
+    tx();
+
+    res.json({ success: true, message: `${store.name}を削除しました` });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
-  db.prepare('DELETE FROM stores WHERE id = ?').run(req.params.id);
-  res.json({ success: true, message: `${store.name}を削除しました` });
 });
 
 // POST /api/admin/line/test — LINE送信テスト
