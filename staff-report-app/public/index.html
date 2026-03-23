@@ -398,6 +398,29 @@
         </div>
       </div>
 
+      <!-- パスワード変更 -->
+      <p class="section-label" style="margin-top:36px;">アカウント設定</p>
+      <div id="pw-change-section" style="background:var(--gray-50);border:1px solid var(--gray-100);border-radius:10px;padding:16px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px;">パスワードを変更</div>
+        <div style="margin-bottom:8px;">
+          <label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px;">現在のパスワード</label>
+          <input type="password" class="input-field" id="pw-current" placeholder="現在のパスワード" style="padding:10px 12px;font-size:14px;">
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px;">新しいパスワード</label>
+          <input type="password" class="input-field" id="pw-new" placeholder="6文字以上" style="padding:10px 12px;font-size:14px;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px;">新しいパスワード（確認）</label>
+          <input type="password" class="input-field" id="pw-confirm" placeholder="もう一度入力" style="padding:10px 12px;font-size:14px;">
+        </div>
+        <button class="btn-primary btn-sm btn-outline" onclick="changePassword()">パスワードを変更する</button>
+      </div>
+
+      <div style="margin-top:20px;text-align:center;">
+        <button onclick="logout()" style="background:none;border:none;color:var(--gray-400);font-size:13px;cursor:pointer;font-family:var(--font-jp);">ログアウト</button>
+      </div>
+
       <div style="height:100px;"></div>
     </div>
     <div id="cta-area" style="padding:12px 20px calc(24px + env(safe-area-inset-bottom, 0px));background:var(--white);border-top:1px solid var(--gray-100);"></div>
@@ -1004,6 +1027,41 @@ function renderFeedback(fb) {
       setTimeout(() => el.style.width = w, 100);
     });
   }, 200);
+}
+
+// ======================================================
+// PASSWORD CHANGE
+// ======================================================
+async function changePassword() {
+  const current = document.getElementById('pw-current').value;
+  const newPw = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+
+  if (!current || !newPw || !confirm) {
+    showToast('すべての項目を入力してください', true);
+    return;
+  }
+  if (newPw.length < 6) {
+    showToast('新しいパスワードは6文字以上にしてください', true);
+    return;
+  }
+  if (newPw !== confirm) {
+    showToast('新しいパスワードが一致しません', true);
+    return;
+  }
+
+  try {
+    const data = await api('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: current, new_password: newPw }),
+    });
+    showToast(data.message);
+    document.getElementById('pw-current').value = '';
+    document.getElementById('pw-new').value = '';
+    document.getElementById('pw-confirm').value = '';
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
 // ======================================================
