@@ -90,6 +90,28 @@ router.put('/stores/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// DELETE /api/admin/staff/:id — スタッフ無効化（論理削除）
+router.delete('/staff/:id', (req, res) => {
+  const db = getDB();
+  const staff = db.prepare('SELECT id, name FROM staff WHERE id = ?').get(req.params.id);
+  if (!staff) return res.status(404).json({ error: 'スタッフが見つかりません' });
+  db.prepare('UPDATE staff SET is_active = 0 WHERE id = ?').run(req.params.id);
+  res.json({ success: true, message: `${staff.name}を削除しました` });
+});
+
+// DELETE /api/admin/stores/:id — 店舗削除
+router.delete('/stores/:id', (req, res) => {
+  const db = getDB();
+  const store = db.prepare('SELECT id, name FROM stores WHERE id = ?').get(req.params.id);
+  if (!store) return res.status(404).json({ error: '店舗が見つかりません' });
+  const activeStaff = db.prepare('SELECT COUNT(*) as count FROM staff WHERE store_id = ? AND is_active = 1').get(req.params.id);
+  if (activeStaff.count > 0) {
+    return res.status(400).json({ error: `${store.name}にはまだ${activeStaff.count}名のスタッフがいます。先にスタッフを削除してください。` });
+  }
+  db.prepare('DELETE FROM stores WHERE id = ?').run(req.params.id);
+  res.json({ success: true, message: `${store.name}を削除しました` });
+});
+
 // POST /api/admin/line/test — LINE送信テスト
 router.post('/line/test', async (req, res) => {
   const { store_id, message } = req.body;

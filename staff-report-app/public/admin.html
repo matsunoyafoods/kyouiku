@@ -96,7 +96,7 @@
     <div class="card">
       <h2>&#127978; 店舗一覧</h2>
       <table>
-        <thead><tr><th>ID</th><th>店舗名</th><th>LINEグループ</th><th>スタッフ数</th></tr></thead>
+        <thead><tr><th>ID</th><th>店舗名</th><th>LINEグループ</th><th>スタッフ数</th><th></th></tr></thead>
         <tbody id="stores-body"></tbody>
       </table>
     </div>
@@ -116,7 +116,7 @@
     <div class="card">
       <h2>&#128101; スタッフ一覧</h2>
       <table>
-        <thead><tr><th>ID</th><th>名前</th><th>店舗</th><th>役割</th></tr></thead>
+        <thead><tr><th>ID</th><th>名前</th><th>店舗</th><th>役割</th><th></th></tr></thead>
         <tbody id="staff-body"></tbody>
       </table>
     </div>
@@ -231,7 +231,8 @@ async function loadAll() {
     document.getElementById('stores-body').innerHTML = st.stores.map(s =>
       `<tr><td><code>${s.id}</code></td><td>${s.name}</td>
        <td>${s.line_group_id ? '<span class="status-dot green"></span> 設定済み' : '<span class="status-dot gray"></span> 未設定'}</td>
-       <td>${s.staff_count}</td></tr>`
+       <td>${s.staff_count}</td>
+       <td><button class="btn btn-danger btn-sm" onclick="deleteStore('${s.id}','${s.name}')">削除</button></td></tr>`
     ).join('');
 
     // Store selects
@@ -251,7 +252,8 @@ async function loadStaff(stores) {
     const d = await api('/admin/staff/list');
     document.getElementById('staff-body').innerHTML = d.staff.map(s =>
       `<tr><td><code>${s.id}</code></td><td>${s.name}</td><td>${s.store_name || s.store_id}</td>
-       <td><span class="badge badge-gray">${s.role}</span></td></tr>`
+       <td><span class="badge badge-gray">${s.role}</span></td>
+       <td><button class="btn btn-danger btn-sm" onclick="deleteStaff('${s.id}','${s.name}')">削除</button></td></tr>`
     ).join('');
   } catch (e) {
     // Fallback if endpoint doesn't exist yet
@@ -286,6 +288,24 @@ async function addStaff() {
     })});
     toast('スタッフを追加しました');
     ['new-staff-id','new-staff-name','new-staff-email','new-staff-pw'].forEach(id => document.getElementById(id).value = '');
+    loadAll();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function deleteStaff(id, name) {
+  if (!confirm(`${name}を削除しますか？`)) return;
+  try {
+    const d = await api('/admin/staff/' + id, { method: 'DELETE' });
+    toast(d.message);
+    loadAll();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function deleteStore(id, name) {
+  if (!confirm(`${name}を削除しますか？\nスタッフが残っている場合は削除できません。`)) return;
+  try {
+    const d = await api('/admin/stores/' + id, { method: 'DELETE' });
+    toast(d.message);
     loadAll();
   } catch (e) { toast(e.message, true); }
 }
