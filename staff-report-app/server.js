@@ -42,6 +42,30 @@ app.post('/api/line/webhook', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// 初期セットアップ（管理者がゼロの時だけ使える）
+app.post('/api/setup', (req, res) => {
+  const { id, name, password, store_id, store_name } = req.body;
+  if (!id || !name || !password) {
+    return res.status(400).json({ error: 'ID、名前、パスワードは必須です' });
+  }
+  const { getDB } = require('./config/database');
+  const bcrypt = require('bcryptjs');
+  const db = getDB();
+  const adminCount = db.prepare("SELECT COUNT(*) as c FROM staff WHERE role = 'admin'").get();
+  if (adminCount.c > 0) {
+    return res.status(403).json({ error: '管理者が既に存在します。このAPIは使えません。' });
+  }
+  const tx = db.transaction(() => {
+    const sid = store_id || 'STORE001';
+    const sname = store_name || '本店';
+    db.prepare('INSERT OR IGNORE INTO stores (id, name) VALUES (?, ?)').run(sid, sname);
+    const hash = bcrypt.hashSync(password, 10);
+    db.prepare('INSERT INTO staff (id, store_id, name, password_hash, role) VALUES (?, ?, ?, ?, ?)').run(id, sid, name, hash, 'admin');
+  });
+  tx();
+  res.json({ success: true, message: '管理者アカウントを作成しました。/admin.html からログインしてください。' });
+});
+
 // ヘルスチェック
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

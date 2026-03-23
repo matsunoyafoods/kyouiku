@@ -153,6 +153,28 @@ router.delete('/stores/:id', (req, res) => {
   }
 });
 
+// POST /api/admin/reset — 全データ削除（初期化）
+router.post('/reset', (req, res) => {
+  try {
+    const { confirm } = req.body;
+    if (confirm !== 'DELETE_ALL') {
+      return res.status(400).json({ error: '確認コードが正しくありません' });
+    }
+    const db = getDB();
+    const tx = db.transaction(() => {
+      db.prepare('DELETE FROM feedbacks').run();
+      db.prepare('DELETE FROM reports').run();
+      db.prepare('DELETE FROM line_notifications').run();
+      db.prepare('DELETE FROM staff').run();
+      db.prepare('DELETE FROM stores').run();
+    });
+    tx();
+    res.json({ success: true, message: '全データを削除しました。店舗・スタッフを登録してください。' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // POST /api/admin/line/test — LINE送信テスト
 router.post('/line/test', async (req, res) => {
   const { store_id, message } = req.body;
