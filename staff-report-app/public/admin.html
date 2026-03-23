@@ -108,9 +108,8 @@
   <div class="tab-content" id="tab-stores">
     <div class="card">
       <h2>&#127978; 店舗一覧</h2>
-      <table>
-        <thead><tr><th>ID</th><th>店舗名</th><th>LINEグループ</th><th>スタッフ数</th><th></th></tr></thead>
-        <tbody id="stores-body"></tbody>
+      <p style="font-size:12px;color:var(--gray-600);margin-bottom:12px;">LINEグループIDは直接入力して「保存」を押してください。</p>
+      <div id="stores-list"></div>
       </table>
     </div>
     <div class="card">
@@ -245,12 +244,19 @@ async function loadAll() {
        <td>${s.submitted_count >= s.total_staff ? '<span class="badge badge-ok">完了</span>' : '<span class="badge badge-warn">未完</span>'}</td></tr>`
     ).join('');
 
-    // Stores
-    document.getElementById('stores-body').innerHTML = st.stores.map(s =>
-      `<tr><td><code>${s.id}</code></td><td>${s.name}</td>
-       <td>${s.line_group_id ? '<span class="status-dot green"></span> 設定済み' : '<span class="status-dot gray"></span> 未設定'}</td>
-       <td>${s.staff_count}</td>
-       <td><button class="btn btn-danger btn-sm" onclick="deleteStore('${s.id}','${s.name}')">削除</button></td></tr>`
+    // Stores (editable cards)
+    document.getElementById('stores-list').innerHTML = st.stores.map(s =>
+      `<div style="background:var(--gray-50);border:1px solid #e0dedb;border-radius:8px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div><strong>${s.name}</strong> <code style="font-size:11px;color:#999;margin-left:6px;">${s.id}</code> <span class="badge badge-gray" style="margin-left:4px;">${s.staff_count}名</span></div>
+          <button class="btn btn-danger btn-sm" onclick="deleteStore('${s.id}','${s.name}')" style="padding:4px 10px;font-size:11px;">削除</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="line-id-${s.id}" value="${s.line_group_id || ''}" placeholder="LINEグループID（Cxxx...）" style="flex:1;padding:8px 10px;border:1.5px solid #e0dedb;border-radius:6px;font-size:13px;font-family:monospace;">
+          <button class="btn btn-accent btn-sm" onclick="saveLineId('${s.id}')" style="padding:8px 14px;white-space:nowrap;">保存</button>
+        </div>
+        <div style="font-size:11px;margin-top:4px;color:${s.line_group_id ? '#2d9e75' : '#b0aca6'};">${s.line_group_id ? '✓ LINE設定済み' : '未設定'}</div>
+      </div>`
     ).join('');
 
     // Store selects
@@ -306,6 +312,15 @@ async function addStaff() {
     })});
     toast('スタッフを追加しました');
     ['new-staff-id','new-staff-name','new-staff-email','new-staff-pw'].forEach(id => document.getElementById(id).value = '');
+    loadAll();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function saveLineId(storeId) {
+  const val = document.getElementById('line-id-' + storeId).value.trim();
+  try {
+    await api('/admin/stores/' + storeId, { method: 'PUT', body: JSON.stringify({ line_group_id: val || null }) });
+    toast(val ? 'LINEグループIDを保存しました' : 'LINEグループIDをクリアしました');
     loadAll();
   } catch (e) { toast(e.message, true); }
 }
