@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>スタッフレポート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0a0a0a;
+    --white: #ffffff;
+    --accent: #f5c842;
+    --accent-dark: #d4a800;
+    --gray-50: #f9f9f8;
+    --gray-100: #f0efeb;
+    --gray-200: #e0dedb;
+    --gray-400: #b0aca6;
+    --gray-600: #6b6760;
+    --gray-800: #2c2a27;
+    --success: #2d9e75;
+    --danger: #d85a30;
+    --font-jp: 'Noto Sans JP', sans-serif;
+    --font-en: 'Space Grotesk', sans-serif;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.14);
+    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font-jp);
+    background: var(--gray-50);
+    color: var(--black);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  #app {
+    height: 100dvh;
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    background: var(--white);
+  }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--white);
+    transition: transform var(--transition), opacity var(--transition);
+    will-change: transform;
+  }
+  .screen.hidden { transform: translateX(100%); opacity: 0; pointer-events: none; }
+  .screen.active { transform: translateX(0); opacity: 1; }
+  .screen.exit-left { transform: translateX(-40%); opacity: 0; pointer-events: none; }
+
+  .screen-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 20px 40px;
+  }
+
+  .top-nav {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--gray-100);
+    flex-shrink: 0;
+    background: var(--white);
+  }
+  .top-nav .nav-title {
+    font-family: var(--font-en);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--gray-600);
+    text-transform: uppercase;
+  }
+  .nav-back {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: none; cursor: pointer;
+    border-radius: 50%;
+    color: var(--black);
+    transition: background var(--transition);
+  }
+  .nav-back:active { background: var(--gray-100); }
+  .nav-back svg { width: 20px; height: 20px; }
+
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 17px 20px;
+    background: var(--black);
+    color: var(--white);
+    border: none; border-radius: var(--radius);
+    font-family: var(--font-jp);
+    font-size: 16px; font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, background var(--transition);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary:active { transform: scale(0.97); background: #222; }
+  .btn-primary:disabled { opacity: 0.4; pointer-events: none; }
+  .btn-accent { background: var(--accent); color: var(--black); }
+  .btn-accent:active { background: var(--accent-dark); }
+  .btn-outline { background: transparent; color: var(--black); border: 1.5px solid var(--gray-200); }
+  .btn-outline:active { background: var(--gray-100); }
+  .btn-ghost { background: var(--gray-100); color: var(--black); border: none; }
+  .btn-ghost:active { background: var(--gray-200); }
+  .btn-sm { padding: 11px 16px; font-size: 14px; border-radius: var(--radius-sm); }
+
+  .input-field {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-jp);
+    font-size: 16px;
+    color: var(--black);
+    background: var(--white);
+    transition: border-color var(--transition);
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .input-field:focus { border-color: var(--black); }
+  .input-field::placeholder { color: var(--gray-400); }
+  textarea.input-field { resize: none; line-height: 1.7; }
+
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .badge-success { background: #e1f5ee; color: #0f6e56; }
+  .badge-warning { background: #faeeda; color: #854f0b; }
+  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+
+  .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px; }
+  .card-sm { padding: 16px; border-radius: var(--radius-sm); }
+
+  .progress-bar-wrap { height: 4px; background: var(--gray-100); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--black); border-radius: 2px; transition: width 0.4s cubic-bezier(0.4,0,0.2,1); }
+
+  .mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 60px; }
+  .mini-chart-bar {
+    flex: 1; border-radius: 4px 4px 0 0;
+    background: var(--gray-200);
+    transition: height 0.4s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+  }
+  .mini-chart-bar.current { background: var(--black); }
+  .mini-chart-bar.accent { background: var(--accent); }
+
+  .loading-dots { display: flex; gap: 6px; align-items: center; justify-content: center; }
+  .loading-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--gray-400);
+    animation: dot-pulse 1.4s infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-pulse { 0%,80%,100%{transform:scale(0.7);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
+  .checkmark-circle {
+    width: 80px; height: 80px;
+    background: var(--black);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    animation: pop-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes pop-in { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+  .checkmark-circle svg { width: 36px; height: 36px; }
+  .checkmark-path {
+    stroke-dasharray: 50;
+    stroke-dashoffset: 50;
+    animation: draw-check 0.4s 0.3s ease forwards;
+  }
+  @keyframes draw-check { to { stroke-dashoffset: 0; } }
+
+  .confetti-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .confetti-piece {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    animation: confetti-fall 2s ease-out forwards;
+  }
+  @keyframes confetti-fall {
+    0%  { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100%{ transform: translateY(600px) rotate(720deg); opacity: 0; }
+  }
+
+  /* LOGIN */
+  #login-screen { background: var(--black); justify-content: flex-end; }
+  .login-hero {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: flex-end;
+    padding: 40px 24px 32px;
+  }
+  .login-logo {
+    font-family: var(--font-en);
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .login-hero h1 { font-size: 32px; font-weight: 700; line-height: 1.2; color: var(--white); margin-bottom: 10px; }
+  .login-hero h1 span { color: var(--accent); }
+  .login-hero p { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+  .login-sheet { background: var(--white); border-radius: 28px 28px 0 0; padding: 28px 24px 40px; }
+  .login-sheet .sheet-handle { width: 36px; height: 4px; background: var(--gray-200); border-radius: 2px; margin: 0 auto 24px; }
+  .login-field-wrap { margin-bottom: 14px; }
+  .login-field-label { font-size: 12px; font-weight: 500; color: var(--gray-600); letter-spacing: 0.04em; margin-bottom: 7px; display: block; }
+  .login-error { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
+
+  /* HOME */
+  .home-header { padding: 24px 20px 20px; background: var(--white); border-bottom: 1px solid var(--gray-100); flex-shrink: 0; }
+  .home-greeting { font-size: 13px; color: var(--gray-600); margin-bottom: 4px; }
+  .home-greeting strong { color: var(--black); }
+  .home-month { font-family: var(--font-en); font-size: 22px; font-weight: 700; color: var(--black); letter-spacing: -0.02em; }
+  .home-month span { color: var(--gray-400); font-weight: 400; margin-left: 4px; font-size: 14px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--gray-400); text-transform: uppercase;
+    margin-bottom: 12px; margin-top: 28px;
+  }
+  .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .score-cell { padding: 16px; background: var(--gray-50); border-radius: var(--radius-sm); border: 1px solid var(--gray-100); }
+  .score-cell .label { font-size: 11px; color: var(--gray-600); margin-bottom: 8px; }
+  .score-cell .val { font-family: var(--font-en); font-size: 28px; font-weight: 700; color: var(--black); line-height: 1; }
+  .score-cell .val span { font-size: 13px; font-weight: 400; color: var(--gray-400); }
+  .score-cell.total { grid-column: 1/-1; background: var(--black); border-color: var(--black); }
+  .score-cell.total .label { color: rgba(255,255,255,0.5); }
+  .score-cell.total .val { color: var(--white); font-size: 36px; }
+  .score-cell.total .val span { color: rgba(255,255,255,0.4); }
+  .chart-wrap { background: var(--gray-50); border-radius: var(--radius-sm); border: 1px solid var(--gray-100); padding: 16px; }
+  .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .chart-header .label { font-size: 12px; font-weight: 500; color: var(--gray-600); }
+  .chart-labels { display: flex; gap: 6px; justify-content: space-around; margin-top: 8px; }
+  .chart-labels span { font-size: 10px; color: var(--gray-400); flex: 1; text-align: center; }
+  .submitted-banner { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .submitted-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--black); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .submitted-icon svg { width: 18px; height: 18px; }
+
+  /* REPORT */
+  .report-header { padding: 16px 20px 0; flex-shrink: 0; }
+  .step-indicator { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .step-count { font-family: var(--font-en); font-size: 13px; font-weight: 500; color: var(--gray-600); }
+  .step-count strong { color: var(--black); font-weight: 700; }
+  .question-slides { flex: 1; overflow: hidden; position: relative; }
+  .question-slide {
+    position: absolute; inset: 0; padding: 28px 20px 20px;
+    display: flex; flex-direction: column;
+    transition: transform var(--transition), opacity var(--transition);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .question-slide.hidden { transform: translateX(60px); opacity: 0; pointer-events: none; }
+  .question-slide.exit { transform: translateX(-60px); opacity: 0; pointer-events: none; }
+  .q-number { font-family: var(--font-en); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--gray-400); text-transform: uppercase; margin-bottom: 10px; }
+  .q-title { font-size: 20px; font-weight: 700; line-height: 1.35; color: var(--black); margin-bottom: 8px; }
+  .q-hint { font-size: 13px; color: var(--gray-600); line-height: 1.6; margin-bottom: 20px; }
+  .q-area { flex: 1; }
+  .q-textarea { min-height: 140px; }
+  .q-special { border: 2px solid var(--accent); }
+  .q-special:focus { border-color: var(--accent-dark); }
+  .report-nav { padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px)); flex-shrink: 0; background: var(--white); border-top: 1px solid var(--gray-100); display: flex; gap: 10px; }
+  .char-count { font-size: 11px; color: var(--gray-400); text-align: right; margin-top: 6px; }
+
+  /* COMPLETE */
+  #complete-screen { background: var(--black); }
+  .complete-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
+  .complete-body h1 { font-size: 28px; font-weight: 700; color: var(--white); margin-top: 28px; margin-bottom: 12px; }
+  .complete-body p { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.7; }
+  .complete-body .highlight { color: var(--accent); }
+  .complete-footer { padding: 16px 24px 40px; }
+
+  /* FEEDBACK */
+  .feedback-hero { padding: 24px 20px 20px; background: var(--black); flex-shrink: 0; }
+  .feedback-hero .meta { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 6px; font-family: var(--font-en); letter-spacing: 0.06em; }
+  .feedback-hero h2 { font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 16px; }
+  .total-score-wrap { display: flex; align-items: center; gap: 16px; }
+  .total-score-num { font-family: var(--font-en); font-size: 52px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .total-score-num span { font-size: 18px; color: rgba(255,255,255,0.4); }
+  .total-score-label { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.5; }
+  .feedback-score-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--gray-100); }
+  .feedback-score-row:last-child { border-bottom: none; }
+  .feedback-score-name { flex: 1; font-size: 14px; font-weight: 500; color: var(--black); }
+  .feedback-score-bar { flex: 2; }
+  .score-bar-track { height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; margin-bottom: 2px; }
+  .score-bar-fill { height: 100%; border-radius: 3px; background: var(--black); transition: width 0.7s cubic-bezier(0.4,0,0.2,1) 0.2s; }
+  .score-bar-val { font-family: var(--font-en); font-size: 12px; font-weight: 500; color: var(--gray-600); text-align: right; }
+  .feedback-section { margin-top: 24px; }
+  .feedback-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--gray-400); text-transform: uppercase; margin-bottom: 12px; }
+  .comment-card { background: var(--gray-50); border: 1px solid var(--gray-100); border-radius: var(--radius-sm); padding: 16px; }
+  .comment-card p { font-size: 14px; line-height: 1.75; color: var(--black); }
+  .point-card { display: flex; gap: 12px; align-items: flex-start; background: var(--gray-50); border: 1px solid var(--gray-100); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 10px; }
+  .point-card:last-child { margin-bottom: 0; }
+  .point-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+  .point-icon.good { background: #e1f5ee; }
+  .point-icon.improve { background: #faeeda; }
+  .point-card p { font-size: 13px; line-height: 1.65; color: var(--black); padding-top: 4px; }
+  .action-card { background: var(--black); border-radius: var(--radius-sm); padding: 18px; display: flex; gap: 14px; align-items: flex-start; }
+  .action-card .icon { font-size: 20px; flex-shrink: 0; }
+  .action-card p { font-size: 14px; color: var(--white); line-height: 1.65; }
+
+  /* AI LOADING */
+  .ai-loading-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 40px; text-align: center; }
+  .ai-pulse { width: 60px; height: 60px; border-radius: 50%; background: var(--accent); animation: ai-pulse 1.4s ease-in-out infinite; }
+  @keyframes ai-pulse { 0%,100%{transform:scale(0.9);opacity:0.6} 50%{transform:scale(1.1);opacity:1} }
+  .ai-loading-screen h3 { font-size: 18px; font-weight: 700; color: var(--black); }
+  .ai-loading-screen p { font-size: 13px; color: var(--gray-600); line-height: 1.6; }
+
+  /* SPINNER */
+  .spinner { width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--black); color: var(--white); padding: 14px 24px;
+    border-radius: var(--radius); font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow-lg); z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--danger); }
+
+  * { -webkit-tap-highlight-color: transparent; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== LOGIN SCREEN ===== -->
+  <div class="screen active" id="login-screen">
+    <div class="login-hero">
+      <div class="login-logo">Staff Report System</div>
+      <h1>成長を、<br>記録しよう。<span>&#10022;</span></h1>
+      <p>月次レポートを提出して<br>あなたの成長を可視化しましょう</p>
+    </div>
+    <div class="login-sheet">
+      <div class="sheet-handle"></div>
+      <div class="login-field-wrap">
+        <label class="login-field-label">スタッフID またはメールアドレス</label>
+        <input type="text" class="input-field" placeholder="例: staff001 / name@shop.com" id="login-id">
+      </div>
+      <div class="login-field-wrap">
+        <label class="login-field-label">パスワード</label>
+        <input type="password" class="input-field" placeholder="パスワードを入力" id="login-pw">
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="btn-primary btn-accent" style="margin-top:20px;" id="btn-login" onclick="doLogin()">
+        ログイン →
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== HOME SCREEN ===== -->
+  <div class="screen hidden" id="home-screen">
+    <div class="home-header">
+      <p class="home-greeting" id="home-greeting">おはようございます、<strong>---</strong> さん</p>
+      <div class="home-month" id="home-month">---- -- <span>月次レポート</span></div>
+    </div>
+    <div class="screen-body">
+      <p class="section-label">今月のステータス</p>
+      <div id="status-area"></div>
+
+      <div id="prev-scores-section" style="display:none;">
+        <p class="section-label">前回スコア</p>
+        <div class="score-grid" id="prev-scores"></div>
+      </div>
+
+      <div id="history-section" style="display:none;">
+        <p class="section-label">スコア推移</p>
+        <div class="chart-wrap">
+          <div class="chart-header">
+            <span class="label">総合スコア推移</span>
+            <span class="badge badge-success" id="growth-badge" style="display:none;">&#8593; 成長中</span>
+          </div>
+          <div class="mini-chart" id="growth-chart"></div>
+          <div class="chart-labels" id="chart-labels"></div>
+        </div>
+      </div>
+
+      <div style="height:100px;"></div>
+    </div>
+    <div id="cta-area" style="padding:12px 20px calc(24px + env(safe-area-inset-bottom, 0px));background:var(--white);border-top:1px solid var(--gray-100);"></div>
+  </div>
+
+  <!-- ===== REPORT SCREEN ===== -->
+  <div class="screen hidden" id="report-screen">
+    <div class="top-nav">
+      <button class="nav-back" onclick="goTo('home-screen','report-screen')">
+        <svg fill="none" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="nav-title">月次レポート</span>
+      <div style="width:36px;"></div>
+    </div>
+    <div class="report-header">
+      <div class="step-indicator">
+        <span class="step-count"><strong id="current-step">1</strong> / 6</span>
+        <span class="badge badge-gray" id="step-label">失敗の振り返り</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="report-progress" style="width:16.6%"></div>
+      </div>
+    </div>
+    <div class="question-slides">
+      <div class="question-slide" id="q1" data-step="1">
+        <div class="q-number">Question 01 / 06</div>
+        <h2 class="q-title">今月一番の<br>失敗は何でしたか？</h2>
+        <p class="q-hint">具体的な出来事やシチュエーションを<br>できるだけ詳しく書いてみましょう</p>
+        <div class="q-area">
+          <textarea class="input-field q-textarea" id="ans1" placeholder="例：ランチのピーク時に注文を聞き間違えてしまい、お客様に間違った料理をお出しした…" rows="5" oninput="updateCharCount(this,'cc1')"></textarea>
+          <div class="char-count" id="cc1">0 文字</div>
+        </div>
+      </div>
+      <div class="question-slide hidden" id="q2" data-step="2">
+        <div class="q-number">Question 02 / 06</div>
+        <h2 class="q-title">その原因は<br>自分のどんな点でしたか？</h2>
+        <p class="q-hint">「環境のせい」「他の人のせい」ではなく、<br>自分自身に原因を探してみましょう</p>
+        <div class="q-area">
+          <textarea class="input-field q-textarea" id="ans2" placeholder="例：繁忙時でも確認の一言を省いてしまう癖がある。メモを取る習慣が身についていなかった…" rows="5" oninput="updateCharCount(this,'cc2')"></textarea>
+          <div class="char-count" id="cc2">0 文字</div>
+        </div>
+      </div>
+      <div class="question-slide hidden" id="q3" data-step="3">
+        <div class="q-number">Question 03 / 06</div>
+        <h2 class="q-title">その問題に対して<br>どう行動しましたか？</h2>
+        <p class="q-hint">失敗後に取った対応や、<br>再発防止のために実践したことを書きましょう</p>
+        <div class="q-area">
+          <textarea class="input-field q-textarea" id="ans3" placeholder="例：すぐにお詫びして正しい料理を提供した。その後、注文時のメモのフォームを自分で作って運用し始めた…" rows="5" oninput="updateCharCount(this,'cc3')"></textarea>
+          <div class="char-count" id="cc3">0 文字</div>
+        </div>
+      </div>
+      <div class="question-slide hidden" id="q4" data-step="4">
+        <div class="q-number">Question 04 / 06</div>
+        <h2 class="q-title">指示されずに<br>自分から動いたことは？</h2>
+        <p class="q-hint">誰かに頼まれたわけではなく、<br>自発的に行動したことを思い出してみましょう</p>
+        <div class="q-area">
+          <textarea class="input-field q-textarea" id="ans4" placeholder="例：常連のお客様の好みを覚えて先回りして提案した。閑散時間に厨房の掃除を率先してやった…" rows="5" oninput="updateCharCount(this,'cc4')"></textarea>
+          <div class="char-count" id="cc4">0 文字</div>
+        </div>
+      </div>
+      <div class="question-slide hidden" id="q5" data-step="5">
+        <div class="q-number">Question 05 / 06</div>
+        <h2 class="q-title">店をより良くするために<br>やったことは？</h2>
+        <p class="q-hint">小さなことでもOK。<br>お店全体のことを考えて動いた経験を教えてください</p>
+        <div class="q-area">
+          <textarea class="input-field q-textarea" id="ans5" placeholder="例：新人スタッフに接客のコツを自主的に教えた。ドリンクメニューの誤字を発見して上司に報告・修正した…" rows="5" oninput="updateCharCount(this,'cc5')"></textarea>
+          <div class="char-count" id="cc5">0 文字</div>
+        </div>
+      </div>
+      <div class="question-slide hidden" id="q6" data-step="6">
+        <div class="q-number">Question 06 / 06</div>
+        <h2 class="q-title">来月、必ず改善する<br>ことを1つ教えてください</h2>
+        <p class="q-hint">具体的で、測定できる行動を書くと効果的です</p>
+        <div class="q-area">
+          <textarea class="input-field q-textarea q-special" id="ans6" placeholder="例：注文を受ける際は必ずオーダー用紙に書き、お客様に復唱確認を行う（100%実施）" rows="5" oninput="updateCharCount(this,'cc6')"></textarea>
+          <div class="char-count" id="cc6">0 文字</div>
+        </div>
+        <div style="margin-top:16px;" class="card card-sm">
+          <p style="font-size:12px;color:var(--gray-600);line-height:1.6;">
+            &#128161; 来月のアクションは、AI評価でも重要な項目として扱われます。できるだけ具体的に書きましょう。
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="report-nav">
+      <button class="btn-primary btn-outline btn-sm" id="btn-prev" onclick="prevStep()" style="flex:0 0 auto;width:48px;padding:11px 0;">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="btn-primary btn-sm" id="btn-next" onclick="nextStep()" style="flex:1;">
+        次の質問へ &#8594;
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== COMPLETE SCREEN ===== -->
+  <div class="screen hidden" id="complete-screen">
+    <div class="confetti-wrap" id="confetti"></div>
+    <div class="complete-body">
+      <div class="checkmark-circle">
+        <svg viewBox="0 0 36 36" fill="none">
+          <path class="checkmark-path" d="M8 18l7 7 13-13" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>提出完了！</h1>
+      <p>レポートを受け取りました。<br>お疲れ様でした &#127881;</p>
+      <div style="margin-top:28px;padding:20px;background:rgba(255,255,255,0.08);border-radius:var(--radius);text-align:left;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Next Step</div>
+        <p style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;">
+          AIがあなたの回答を分析中です。<br>
+          <span class="highlight">フィードバックは 24時間以内</span>に届きます。
+        </p>
+      </div>
+    </div>
+    <div class="complete-footer">
+      <button class="btn-primary btn-accent" onclick="checkFeedback()">AI評価を確認する</button>
+      <button class="btn-primary btn-ghost" style="margin-top:10px;color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.08);" onclick="goTo('home-screen','complete-screen');loadHomeData();">
+        ホームに戻る
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== FEEDBACK SCREEN ===== -->
+  <div class="screen hidden" id="feedback-screen">
+    <div class="feedback-hero" id="feedback-hero">
+      <div class="meta" id="fb-meta">AI FEEDBACK</div>
+      <h2 id="fb-title">評価を読み込み中...</h2>
+      <div class="total-score-wrap">
+        <div class="total-score-num" id="fb-total">--<span>/5</span></div>
+        <div class="total-score-label" id="fb-total-label">読み込み中...</div>
+      </div>
+    </div>
+
+    <div class="screen-body" style="padding-top:20px;">
+      <!-- AI読み込み中 -->
+      <div class="ai-loading-screen" id="fb-loading">
+        <div class="ai-pulse"></div>
+        <h3>AI評価を生成中...</h3>
+        <p>回答を分析しています。<br>しばらくお待ちください。</p>
+      </div>
+
+      <!-- スコア詳細 -->
+      <div id="fb-content" style="display:none;">
+        <p class="section-label">項目別スコア</p>
+        <div class="card" id="fb-scores"></div>
+
+        <div class="feedback-section">
+          <p class="feedback-section-title">AIからの総合コメント</p>
+          <div class="comment-card" id="fb-comment"></div>
+        </div>
+
+        <div class="feedback-section">
+          <p class="feedback-section-title">良かった点</p>
+          <div id="fb-good"></div>
+        </div>
+
+        <div class="feedback-section">
+          <p class="feedback-section-title">改善のヒント</p>
+          <div id="fb-improve"></div>
+        </div>
+
+        <div class="feedback-section">
+          <p class="feedback-section-title">来月のアクション</p>
+          <div id="fb-action"></div>
+        </div>
+
+        <div style="height:20px;"></div>
+      </div>
+    </div>
+    <div style="padding:12px 20px 24px;border-top:1px solid var(--gray-100);background:var(--white);">
+      <button class="btn-primary" onclick="goTo('home-screen','feedback-screen');loadHomeData();">ホームに戻る</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ======================================================
+// API CLIENT
+// ======================================================
+const API_BASE = '/api';
+let authToken = localStorage.getItem('authToken') || null;
+let currentUser = null;
+
+async function api(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const data = await res.json();
+
+  if (!res.ok) {
+    if (res.status === 401) { logout(); }
+    throw new Error(data.error || 'エラーが発生しました');
+  }
+  return data;
+}
+
+// ======================================================
+// TOAST
+// ======================================================
+function showToast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ======================================================
+// NAVIGATION
+// ======================================================
+function goTo(targetId, fromId) {
+  const from = document.getElementById(fromId);
+  from.classList.add('exit-left');
+  from.classList.remove('active');
+  setTimeout(() => { from.classList.add('hidden'); from.classList.remove('exit-left'); }, 300);
+  const target = document.getElementById(targetId);
+  target.classList.remove('hidden');
+  setTimeout(() => target.classList.add('active'), 10);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active','hidden','exit-left');
+    s.classList.add('hidden');
+  });
+  const target = document.getElementById(id);
+  target.classList.remove('hidden');
+  target.classList.add('active');
+}
+
+// ======================================================
+// AUTH
+// ======================================================
+async function doLogin() {
+  const loginId = document.getElementById('login-id').value.trim();
+  const password = document.getElementById('login-pw').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('btn-login');
+
+  if (!loginId || !password) {
+    errEl.textContent = 'IDとパスワードを入力してください';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>';
+  errEl.style.display = 'none';
+
+  try {
+    const data = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ login_id: loginId, password }),
+    });
+
+    authToken = data.token;
+    currentUser = data.staff;
+    localStorage.setItem('authToken', authToken);
+
+    await loadHomeData();
+    goTo('home-screen', 'login-screen');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'ログイン &#8594;';
+  }
+}
+
+function logout() {
+  authToken = null;
+  currentUser = null;
+  localStorage.removeItem('authToken');
+  showScreen('login-screen');
+}
+
+// Enter キーでログイン
+document.getElementById('login-pw').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ======================================================
+// HOME DATA
+// ======================================================
+async function loadHomeData() {
+  try {
+    // ユーザー情報がなければ取得
+    if (!currentUser) {
+      const meData = await api('/auth/me');
+      currentUser = meData.staff || meData.user;
+    }
+
+    // 挨拶
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'おはようございます' : hour < 18 ? 'こんにちは' : 'お疲れ様です';
+    document.getElementById('home-greeting').innerHTML =
+      `${greeting}、<strong>${currentUser.name}</strong> さん`;
+
+    // ステータス取得
+    const status = await api('/reports/status');
+
+    // 月表示
+    const [y, m] = status.current_month.split('-');
+    document.getElementById('home-month').innerHTML =
+      `${y}年 ${parseInt(m)}月 <span>月次レポート</span>`;
+
+    // 提出状況
+    const statusArea = document.getElementById('status-area');
+    if (status.is_submitted) {
+      statusArea.innerHTML = `
+        <div class="submitted-banner">
+          <div class="submitted-icon">
+            <svg fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#f5c842" stroke-width="2"/><path d="M8 12l3 3 5-5" stroke="#f5c842" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:2px;">今月分：提出済み</div>
+            <div style="font-size:12px;color:var(--gray-600);">${status.submitted_at ? new Date(status.submitted_at).toLocaleDateString('ja-JP') + ' 提出' : ''}</div>
+          </div>
+        </div>`;
+    } else {
+      statusArea.innerHTML = `
+        <div class="submitted-banner" style="border-color:var(--accent);background:#fffdf5;">
+          <div class="submitted-icon" style="background:var(--accent);">
+            <svg fill="none" viewBox="0 0 24 24" width="18" height="18"><path d="M12 8v4l3 3" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#0a0a0a" stroke-width="2" fill="none"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:2px;">未提出</div>
+            <div style="font-size:12px;color:var(--gray-600);">締切まであと ${status.days_left}日</div>
+          </div>
+        </div>`;
+    }
+
+    // 前回スコア
+    const prevSection = document.getElementById('prev-scores-section');
+    if (status.prev_feedback) {
+      prevSection.style.display = 'block';
+      const pf = status.prev_feedback;
+      document.getElementById('prev-scores').innerHTML = `
+        <div class="score-cell"><div class="label">自責思考</div><div class="val">${pf.score_self_responsibility}<span>/5</span></div></div>
+        <div class="score-cell"><div class="label">解決能力</div><div class="val">${pf.score_problem_solving}<span>/5</span></div></div>
+        <div class="score-cell"><div class="label">主体性</div><div class="val">${pf.score_initiative}<span>/5</span></div></div>
+        <div class="score-cell"><div class="label">オーナーシップ</div><div class="val">${pf.score_ownership}<span>/5</span></div></div>
+        <div class="score-cell total"><div class="label">総合スコア</div><div class="val">${pf.total_score}<span>/5.0</span></div></div>`;
+    } else {
+      prevSection.style.display = 'none';
+    }
+
+    // スコア推移
+    const histSection = document.getElementById('history-section');
+    if (status.score_history && status.score_history.length > 1) {
+      histSection.style.display = 'block';
+      const chart = document.getElementById('growth-chart');
+      const labels = document.getElementById('chart-labels');
+      chart.innerHTML = '';
+      labels.innerHTML = '';
+
+      const scores = status.score_history;
+      const max = 5;
+      scores.forEach((s, i) => {
+        const pct = (s.total_score / max * 100);
+        const isLast = i === scores.length - 1;
+        chart.innerHTML += `<div class="mini-chart-bar${isLast ? ' current accent' : ''}" style="height:${pct}%"></div>`;
+        const [, mm] = s.year_month.split('-');
+        labels.innerHTML += `<span>${parseInt(mm)}月</span>`;
+      });
+
+      // 成長判定
+      if (scores.length >= 2 && scores[scores.length - 1].total_score > scores[scores.length - 2].total_score) {
+        document.getElementById('growth-badge').style.display = 'inline-flex';
+      }
+    } else {
+      histSection.style.display = 'none';
+    }
+
+    // CTA
+    const ctaArea = document.getElementById('cta-area');
+    if (status.is_submitted) {
+      ctaArea.innerHTML = `
+        <button class="btn-primary" onclick="checkFeedback()">AI評価を確認する</button>
+        <div style="text-align:center;font-size:12px;color:var(--gray-400);margin-top:10px;">提出済みです。フィードバックを確認しましょう。</div>`;
+    } else {
+      ctaArea.innerHTML = `
+        <div style="padding:12px 0 10px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span class="badge badge-warning">${parseInt(m)}月 未提出</span>
+            <span style="font-size:12px;color:var(--gray-600);">締切まであと ${status.days_left}日</span>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="startReport()">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 4v16m-8-8h16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+          今月のレポートを書く
+        </button>
+        <div style="text-align:center;font-size:12px;color:var(--gray-400);margin-top:10px;">フィードバックは提出後 24時間以内にAIが評価します</div>`;
+    }
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+// ======================================================
+// REPORT LOGIC
+// ======================================================
+let currentStep = 1;
+const TOTAL_STEPS = 6;
+const stepLabels = ['失敗の振り返り','自己分析','対応行動','主体性','オーナー行動','来月の目標'];
+
+function startReport() {
+  currentStep = 1;
+  // Clear previous answers
+  for (let i = 1; i <= 6; i++) {
+    const ta = document.getElementById('ans' + i);
+    if (ta) { ta.value = ''; }
+    const cc = document.getElementById('cc' + i);
+    if (cc) cc.textContent = '0 文字';
+  }
+  updateReportUI();
+  goTo('report-screen', 'home-screen');
+}
+
+function updateReportUI() {
+  document.getElementById('current-step').textContent = currentStep;
+  document.getElementById('step-label').textContent = stepLabels[currentStep - 1];
+  document.getElementById('report-progress').style.width = (currentStep / TOTAL_STEPS * 100) + '%';
+
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const el = document.getElementById('q' + i);
+    if (i === currentStep) {
+      el.classList.remove('hidden', 'exit');
+    } else if (i < currentStep) {
+      el.classList.remove('hidden');
+      el.classList.add('exit');
+    } else {
+      el.classList.add('hidden');
+      el.classList.remove('exit');
+    }
+  }
+
+  document.getElementById('btn-prev').style.display = currentStep === 1 ? 'none' : 'flex';
+  document.getElementById('btn-next').innerHTML = currentStep === TOTAL_STEPS ? '提出する &#127881;' : '次の質問へ &#8594;';
+}
+
+function nextStep() {
+  // Validate current answer
+  const ta = document.getElementById('ans' + currentStep);
+  if (ta && ta.value.trim().length < 10) {
+    showToast('10文字以上で回答してください', true);
+    ta.focus();
+    return;
+  }
+
+  if (currentStep === TOTAL_STEPS) {
+    submitReport();
+    return;
+  }
+  currentStep++;
+  updateReportUI();
+  const nextTa = document.getElementById('ans' + currentStep);
+  if (nextTa) setTimeout(() => nextTa.focus(), 200);
+}
+
+function prevStep() {
+  if (currentStep <= 1) return;
+  currentStep--;
+  updateReportUI();
+}
+
+async function submitReport() {
+  const btn = document.getElementById('btn-next');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> 送信中...';
+
+  try {
+    const body = {
+      q1: document.getElementById('ans1').value,
+      q2: document.getElementById('ans2').value,
+      q3: document.getElementById('ans3').value,
+      q4: document.getElementById('ans4').value,
+      q5: document.getElementById('ans5').value,
+      q6: document.getElementById('ans6').value,
+    };
+
+    await api('/reports/submit', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+
+    goTo('complete-screen', 'report-screen');
+    launchConfetti();
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '提出する &#127881;';
+  }
+}
+
+function updateCharCount(el, ccId) {
+  document.getElementById(ccId).textContent = el.value.length + ' 文字';
+}
+
+// ======================================================
+// FEEDBACK
+// ======================================================
+async function checkFeedback() {
+  goTo('feedback-screen', document.querySelector('.screen.active').id);
+
+  // Show loading
+  document.getElementById('fb-loading').style.display = 'flex';
+  document.getElementById('fb-content').style.display = 'none';
+  document.getElementById('fb-title').textContent = '評価を読み込み中...';
+  document.getElementById('fb-total').innerHTML = '--<span>/5</span>';
+
+  const now = new Date();
+  const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  let attempts = 0;
+  const maxAttempts = 30; // 最大30回ポーリング（5秒間隔 = 2.5分）
+
+  async function poll() {
+    try {
+      const data = await api(`/reports/feedback/${yearMonth}`);
+
+      if (data.status === 'processing') {
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000);
+        } else {
+          document.getElementById('fb-loading').innerHTML = `
+            <div style="font-size:48px;">&#9203;</div>
+            <h3>生成に時間がかかっています</h3>
+            <p>しばらくしてからもう一度ご確認ください。</p>`;
+        }
+        return;
+      }
+
+      renderFeedback(data.feedback);
+    } catch (err) {
+      document.getElementById('fb-loading').innerHTML = `
+        <div style="font-size:48px;">&#9888;&#65039;</div>
+        <h3>エラーが発生しました</h3>
+        <p>${err.message}</p>`;
+    }
+  }
+
+  poll();
+}
+
+function renderFeedback(fb) {
+  const now = new Date();
+  const monthNames = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+
+  document.getElementById('fb-meta').textContent = `AI FEEDBACK • ${now.getFullYear()} ${monthNames[now.getMonth()]}`;
+  document.getElementById('fb-title').textContent = `${currentUser.name}さんの評価`;
+  document.getElementById('fb-total').innerHTML = `${fb.total_score}<span>/5</span>`;
+  document.getElementById('fb-total-label').innerHTML = `総合スコア`;
+
+  // Scores
+  const scoreItems = [
+    { name: '自責思考', score: fb.score_self_responsibility },
+    { name: '解決能力', score: fb.score_problem_solving },
+    { name: '主体性', score: fb.score_initiative },
+    { name: 'オーナーシップ', score: fb.score_ownership },
+  ];
+
+  document.getElementById('fb-scores').innerHTML = scoreItems.map(s => `
+    <div class="feedback-score-row">
+      <div class="feedback-score-name">${s.name}</div>
+      <div class="feedback-score-bar">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:${s.score / 5 * 100}%"></div></div>
+        <div class="score-bar-val">${s.score} / 5</div>
+      </div>
+    </div>`).join('');
+
+  // Comment
+  document.getElementById('fb-comment').innerHTML = `<p>${fb.comment_overall}</p>`;
+
+  // Good points
+  document.getElementById('fb-good').innerHTML = (fb.good_points || []).map(p =>
+    `<div class="point-card"><div class="point-icon good">&#11088;</div><p>${p}</p></div>`).join('');
+
+  // Improvement
+  document.getElementById('fb-improve').innerHTML = (fb.improvement_points || []).map(p =>
+    `<div class="point-card"><div class="point-icon improve">&#128161;</div><p>${p}</p></div>`).join('');
+
+  // Action
+  document.getElementById('fb-action').innerHTML = `
+    <div class="action-card">
+      <div class="icon">&#127919;</div>
+      <p>${fb.next_action}</p>
+    </div>`;
+
+  // Show content, hide loading
+  document.getElementById('fb-loading').style.display = 'none';
+  document.getElementById('fb-content').style.display = 'block';
+
+  // Animate score bars
+  setTimeout(() => {
+    document.querySelectorAll('#fb-scores .score-bar-fill').forEach(el => {
+      const w = el.style.width;
+      el.style.width = '0';
+      setTimeout(() => el.style.width = w, 100);
+    });
+  }, 200);
+}
+
+// ======================================================
+// CONFETTI
+// ======================================================
+function launchConfetti() {
+  const wrap = document.getElementById('confetti');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const colors = ['#f5c842','#0a0a0a','#f0efeb','#2d9e75','#d85a30'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random() * 100 + '%';
+    el.style.top = '-10px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDelay = Math.random() * 0.8 + 's';
+    el.style.animationDuration = (1.5 + Math.random()) + 's';
+    wrap.appendChild(el);
+  }
+  setTimeout(() => { if (wrap) wrap.innerHTML = ''; }, 3000);
+}
+
+// ======================================================
+// SWIPE GESTURES
+// ======================================================
+document.addEventListener('DOMContentLoaded', () => {
+  let touchStartX = 0;
+  const slides = document.querySelector('.question-slides');
+  if (slides) {
+    slides.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+    slides.addEventListener('touchend', e => {
+      const dx = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(dx) > 50) { dx > 0 ? nextStep() : prevStep(); }
+    }, { passive: true });
+  }
+
+  // 自動ログイン試行
+  if (authToken) {
+    api('/auth/me').then(data => {
+      currentUser = data.staff || data.user;
+      loadHomeData().then(() => showScreen('home-screen'));
+    }).catch(() => {
+      localStorage.removeItem('authToken');
+      authToken = null;
+    });
+  }
+});
+</script>
+</body>
+</html>
