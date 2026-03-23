@@ -20,26 +20,42 @@ router.get('/stores', (req, res) => {
 
 // POST /api/admin/stores — 店舗追加
 router.post('/stores', (req, res) => {
-  const { id, name, line_group_id } = req.body;
-  if (!id || !name) return res.status(400).json({ error: '店舗IDと名前は必須です' });
-  const db = getDB();
-  db.prepare('INSERT INTO stores (id, name, line_group_id) VALUES (?, ?, ?)').run(id, name, line_group_id || null);
-  res.json({ success: true });
+  try {
+    const { id, name, line_group_id } = req.body;
+    if (!id || !name) return res.status(400).json({ error: '店舗IDと名前は必須です' });
+    const db = getDB();
+    const existing = db.prepare('SELECT id FROM stores WHERE id = ?').get(id);
+    if (existing) return res.status(400).json({ error: 'この店舗IDは既に使われています' });
+    db.prepare('INSERT INTO stores (id, name, line_group_id) VALUES (?, ?, ?)').run(id, name, line_group_id || null);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // POST /api/admin/staff — スタッフ追加
 router.post('/staff', (req, res) => {
-  const { id, store_id, name, email, password, role } = req.body;
-  if (!id || !store_id || !name || !password) {
-    return res.status(400).json({ error: '必須項目を入力してください' });
+  try {
+    const { id, store_id, name, email, password, role } = req.body;
+    if (!id || !store_id || !name || !password) {
+      return res.status(400).json({ error: '必須項目を入力してください（ID、店舗、名前、パスワード）' });
+    }
+    const db = getDB();
+    const existing = db.prepare('SELECT id FROM staff WHERE id = ?').get(id);
+    if (existing) return res.status(400).json({ error: 'このスタッフIDは既に使われています' });
+    if (email) {
+      const emailExists = db.prepare('SELECT id FROM staff WHERE email = ?').get(email);
+      if (emailExists) return res.status(400).json({ error: 'このメールアドレスは既に使われています' });
+    }
+    const hash = bcrypt.hashSync(password, 10);
+    db.prepare(`
+      INSERT INTO staff (id, store_id, name, email, password_hash, role)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, store_id, name, email || null, hash, role || 'staff');
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
-  const db = getDB();
-  const hash = bcrypt.hashSync(password, 10);
-  db.prepare(`
-    INSERT INTO staff (id, store_id, name, email, password_hash, role)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(id, store_id, name, email || null, hash, role || 'staff');
-  res.json({ success: true });
 });
 
 // GET /api/admin/reports/overview — 全店舗レポート概況
