@@ -76,6 +76,10 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ===== DB マイグレーション（テーブル作成のみ、データ挿入なし） =====
+const { runMigrations } = require('./config/migrate');
+runMigrations();
+
 // ===== サーバー起動 =====
 app.listen(PORT, () => {
   console.log(`\n🚀 Staff Report Server 起動`);
