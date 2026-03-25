@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --black: #0a0a0a; --white: #fff; --accent: #f5c842; --gray-50: #f9f9f8; --gray-100: #f0efeb; --gray-200: #e0dedb; --gray-400: #b0aca6; --gray-600: #6b6760; --radius: 12px; --font: 'Noto Sans JP', sans-serif; }
+  :root { --black: #0a0a0a; --white: #fff; --accent: f5c842; --gray-50: #f9f9f8; --gray-100: #f0efeb; --gray-200: #e0dedb; --gray-400: #b0aca6; --gray-600: #6b6760; --radius: 12px; --font: 'Noto Sans JP', sans-serif; }
   body { font-family: var(--font); background: var(--gray-50); color: var(--black); min-height: 100vh; }
   .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
   h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
@@ -409,27 +409,17 @@ async function init() {
     admLogout();
   }
 
-  // Try logging in with dummy to check if any admin exists
+  // セットアップ状態を確認
   try {
-    await api('/auth/login', { method: 'POST', body: JSON.stringify({ login_id: '__check__', password: '__check__' }) });
-  } catch (e) {
-    // If error is "IDまたはパスワードが正しくありません" → admins exist → show login
-    // If setup needed → try setup endpoint
-    try {
-      const setupCheck = await api('/setup', { method: 'POST', body: JSON.stringify({}) });
-    } catch (se) {
-      if (se.message.includes('管理者が既に存在')) {
-        document.getElementById('login-view').style.display = 'block';
-      } else if (se.message.includes('必須')) {
-        // No admin exists, show setup
-        document.getElementById('setup-view').style.display = 'block';
-      } else {
-        document.getElementById('login-view').style.display = 'block';
-      }
-      return;
+    const status = await fetch(API + '/setup/status').then(r => r.json());
+    if (status.needsSetup) {
+      document.getElementById('setup-view').style.display = 'block';
+    } else {
+      document.getElementById('login-view').style.display = 'block';
     }
+  } catch (e) {
+    document.getElementById('login-view').style.display = 'block';
   }
-  document.getElementById('login-view').style.display = 'block';
 }
 
 init();
