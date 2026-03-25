@@ -42,6 +42,14 @@ app.post('/api/line/webhook', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// セットアップ状態確認
+app.get('/api/setup/status', (req, res) => {
+  const { getDB } = require('./config/database');
+  const db = getDB();
+  const adminCount = db.prepare("SELECT COUNT(*) as c FROM staff WHERE role = 'admin'").get();
+  res.json({ needsSetup: adminCount.c === 0 });
+});
+
 // 初期セットアップ（管理者がゼロの時だけ使える）
 app.post('/api/setup', (req, res) => {
   const { id, name, password, store_id, store_name } = req.body;
