@@ -38,7 +38,7 @@ app.get('/api/line/webhook', (req, res) => {
   res.json({ status: 'ok', message: 'LINE Webhook endpoint is active' });
 });
 
-app.post('/api/line/webhook', (req, res) => {
+app.post('/api/line/webhook', async (req, res) => {
   console.log('📩 LINE Webhook受信:', JSON.stringify(req.body));
   const events = req.body.events || [];
   if (events.length === 0) {
@@ -47,8 +47,25 @@ app.post('/api/line/webhook', (req, res) => {
   for (const event of events) {
     console.log(`📌 イベント種別: ${event.type}, ソース: ${event.source?.type}, groupId: ${event.source?.groupId || 'なし'}`);
     if (event.type === 'join' && event.source?.type === 'group') {
-      console.log(`🔗 LINE グループ参加: groupId = ${event.source.groupId}`);
-      console.log('   このIDを環境変数LINE_GROUP_XXXに設定してください');
+      const groupId = event.source.groupId;
+      console.log(`🔗 LINE グループ参加: groupId = ${groupId}`);
+      // グループにgroupIdを自動返信
+      try {
+        const line = require('@line/bot-sdk');
+        const client = new line.messagingApi.MessagingApiClient({
+          channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
+        });
+        await client.pushMessage({
+          to: groupId,
+          messages: [{
+            type: 'text',
+            text: `📋 BOT登録完了！\n\nこのグループのIDは:\n${groupId}\n\n管理者はこのIDを店舗設定に登録してください。`,
+          }],
+        });
+        console.log('   ✅ groupIdをグループに送信しました');
+      } catch (err) {
+        console.error('   ❌ groupId送信失敗:', err.message);
+      }
     }
     if (event.type === 'memberJoined' && event.source?.type === 'group') {
       console.log(`👤 メンバー参加: groupId = ${event.source.groupId}`);
