@@ -32,12 +32,29 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/admin', require('./routes/admin'));
 
 // LINE Webhook（Bot招待時のグループID取得用）
+// GET: webhook URL動作確認用（LINE Developers Consoleの検証ボタン対応）
+app.get('/api/line/webhook', (req, res) => {
+  console.log('✅ LINE Webhook GET確認リクエスト受信');
+  res.json({ status: 'ok', message: 'LINE Webhook endpoint is active' });
+});
+
 app.post('/api/line/webhook', (req, res) => {
+  console.log('📩 LINE Webhook受信:', JSON.stringify(req.body));
   const events = req.body.events || [];
+  if (events.length === 0) {
+    console.log('   (検証リクエスト: eventsが空)');
+  }
   for (const event of events) {
-    if (event.type === 'join' && event.source.type === 'group') {
+    console.log(`📌 イベント種別: ${event.type}, ソース: ${event.source?.type}, groupId: ${event.source?.groupId || 'なし'}`);
+    if (event.type === 'join' && event.source?.type === 'group') {
       console.log(`🔗 LINE グループ参加: groupId = ${event.source.groupId}`);
-      console.log('   このIDを.envのLINE_GROUP_XXXに設定してください');
+      console.log('   このIDを環境変数LINE_GROUP_XXXに設定してください');
+    }
+    if (event.type === 'memberJoined' && event.source?.type === 'group') {
+      console.log(`👤 メンバー参加: groupId = ${event.source.groupId}`);
+    }
+    if (event.type === 'follow') {
+      console.log(`👋 友だち追加: userId = ${event.source?.userId}`);
     }
   }
   res.json({ status: 'ok' });
