@@ -175,6 +175,50 @@ router.post('/reset', (req, res) => {
   }
 });
 
+// POST /api/admin/invite — 招待トークン発行
+router.post('/invite', (req, res) => {
+  try {
+    const { store_id, days } = req.body;
+    if (!store_id) return res.status(400).json({ error: '店舗IDは必須です' });
+    const db = getDB();
+    const store = db.prepare('SELECT id, name FROM stores WHERE id = ?').get(store_id);
+    if (!store) return res.status(404).json({ error: '店舗が見つかりません' });
+
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(24).toString('hex');
+    const expiresIn = Math.min(Math.max(days || 7, 1), 30); // 1〜30日
+    const expiresAt = new Date(Date.now() + expiresIn * 24 * 60 * 60 * 1000).toISOString();
+
+    db.prepare(`
+      INSERT INTO invite_tokens (token, store_id, created_by, expires_at)
+      VALUES (?, ?, ?, ?)
+    `).run(token, store_id, req.user.staff_id, expiresAt);
+
+    res.json({ success: true, token, store_name: store.name, expires_at: expiresAt });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/admin/invite/list — 招待トークン一覧
+router.get('/invite/list', (req, res) => {
+  const db = getDB();
+  const tokens = db.prepare(`
+    SELECT t.*, s.name as store_name
+    FROM invite_tokens t JOIN stores s ON t.store_id = s.id
+    WHERE t.is_active = 1
+    ORDER BY t.created_at DESC
+  `).all();
+  res.json({ tokens });
+});
+
+// DELETE /api/admin/invite/:id — 招待トークン無効化
+router.delete('/invite/:id', (req, res) => {
+  const db = getDB();
+  db.prepare('UPDATE invite_tokens SET is_active = 0 WHERE id = ?').run(req.params.id);
+  res.json({ success: true, message: '招待リンクを無効化しました' });
+});
+
 // POST /api/admin/line/test — LINE送信テスト
 router.post('/line/test', async (req, res) => {
   const { store_id, message } = req.body;
