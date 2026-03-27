@@ -65,8 +65,8 @@
 
       <div class="field">
         <label>スタッフID（ログイン時に使用）</label>
-        <input id="reg-id" placeholder="例: yamada_taro" autocomplete="off">
-        <div class="hint">半角英数字・アンダースコアで入力してください</div>
+        <input id="reg-id" placeholder="例: yamada" autocomplete="off">
+        <div class="hint">ログイン時に使うIDです。お好きなIDを入力してください</div>
       </div>
       <div class="field">
         <label>名前</label>
@@ -124,7 +124,6 @@ function showView(id) {
 }
 
 async function init() {
-  // URLからトークンを取得 (?token=xxx)
   const params = new URLSearchParams(window.location.search);
   inviteToken = params.get('token');
 
@@ -146,13 +145,11 @@ async function init() {
     defaultStoreId = d.default_store_id;
     document.getElementById('store-label').textContent = d.default_store_name;
 
-    // 店舗ドロップダウン
     const sel = document.getElementById('reg-store');
     sel.innerHTML = d.stores.map(s =>
       `<option value="${s.id}" ${s.id === d.default_store_id ? 'selected' : ''}>${s.name}</option>`
     ).join('');
 
-    // 有効期限表示
     const exp = new Date(d.expires_at);
     document.getElementById('expires-label').textContent =
       `この招待リンクの有効期限: ${exp.getFullYear()}/${exp.getMonth()+1}/${exp.getDate()} ${exp.getHours()}:${String(exp.getMinutes()).padStart(2,'0')}`;
