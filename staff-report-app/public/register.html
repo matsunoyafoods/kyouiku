@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スタッフ登録 - Staff Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --black: #0a0a0a; --white: #fff; --accent: #f5c842; --gray-50: #f9f9f8; --gray-100: #f0efeb; --gray-200: #e0dedb; --gray-400: #b0aca6; --gray-600: #6b6760; --radius: 12px; --font: 'Noto Sans JP', sans-serif; }
+  body { font-family: var(--font); background: var(--gray-50); color: var(--black); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  .container { max-width: 440px; width: 100%; }
+  .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 28px 24px; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .subtitle { color: var(--gray-600); font-size: 13px; margin-bottom: 20px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--gray-600); margin-bottom: 4px; }
+  .field input, .field select { width: 100%; padding: 11px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-family: var(--font); font-size: 15px; outline: none; background: var(--white); }
+  .field input:focus, .field select:focus { border-color: var(--black); }
+  .field .hint { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 24px; border: none; border-radius: 8px; font-family: var(--font); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.15s; width: 100%; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--black); color: var(--white); }
+  .info-box { background: #f0f4ff; border: 1px solid #d0dcf0; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #334; line-height: 1.6; margin-bottom: 20px; }
+  .error-box { background: #fff5f5; border: 1px solid #fcc; border-radius: 8px; padding: 16px; text-align: center; color: #c33; font-size: 14px; }
+  .success-box { background: #e1f5ee; border: 1px solid #b0e0d0; border-radius: 8px; padding: 24px; text-align: center; }
+  .success-box h2 { font-size: 18px; margin-bottom: 8px; color: #0f6e56; }
+  .success-box p { font-size: 14px; color: #334; line-height: 1.6; }
+  .success-box .login-link { display: inline-block; margin-top: 16px; padding: 10px 24px; background: var(--black); color: var(--white); border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #e1f5ee; color: #0f6e56; }
+  .expires { font-size: 11px; color: var(--gray-400); margin-top: 12px; text-align: center; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--black); color: var(--white); padding: 12px 24px; border-radius: 10px; font-size: 14px; z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #d85a30; }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- ローディング -->
+  <div id="loading-view" class="card" style="text-align:center;padding:40px;">
+    <p style="color:var(--gray-400);">読み込み中...</p>
+  </div>
+
+  <!-- エラー（無効/期限切れ） -->
+  <div id="error-view" style="display:none;">
+    <div class="card">
+      <div class="error-box">
+        <p style="font-size:24px;margin-bottom:8px;">&#9888;&#65039;</p>
+        <p id="error-msg">無効な招待リンクです</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 登録フォーム -->
+  <div id="register-view" style="display:none;">
+    <div class="card">
+      <h1>&#128221; スタッフ登録</h1>
+      <p class="subtitle">招待リンクからのスタッフ自己登録</p>
+
+      <div class="info-box">
+        所属店舗: <strong id="store-label"></strong><br>
+        下記フォームに入力して登録してください。
+      </div>
+
+      <div class="field">
+        <label>スタッフID（ログイン時に使用）</label>
+        <input id="reg-id" placeholder="例: yamada_taro" autocomplete="off">
+        <div class="hint">半角英数字・アンダースコアで入力してください</div>
+      </div>
+      <div class="field">
+        <label>名前</label>
+        <input id="reg-name" placeholder="例: 山田 太郎">
+      </div>
+      <div class="field">
+        <label>所属店舗</label>
+        <select id="reg-store"></select>
+      </div>
+      <div class="field">
+        <label>パスワード</label>
+        <input id="reg-pw" type="password" placeholder="4文字以上">
+      </div>
+      <div class="field">
+        <label>パスワード（確認）</label>
+        <input id="reg-pw2" type="password" placeholder="もう一度入力">
+      </div>
+
+      <button class="btn btn-primary" id="reg-btn" onclick="doRegister()">登録する</button>
+      <p class="expires" id="expires-label"></p>
+    </div>
+  </div>
+
+  <!-- 登録完了 -->
+  <div id="success-view" style="display:none;">
+    <div class="card">
+      <div class="success-box">
+        <p style="font-size:32px;margin-bottom:12px;">&#127881;</p>
+        <h2>登録完了！</h2>
+        <p id="success-msg">スタッフ登録が完了しました。</p>
+        <a class="login-link" href="/">レポート画面にログイン</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const API = '/api';
+let inviteToken = '';
+let defaultStoreId = '';
+
+function toast(msg, err) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (err ? ' error' : '');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function showView(id) {
+  ['loading-view','error-view','register-view','success-view'].forEach(v =>
+    document.getElementById(v).style.display = v === id ? 'block' : 'none'
+  );
+}
+
+async function init() {
+  // URLからトークンを取得 (?token=xxx)
+  const params = new URLSearchParams(window.location.search);
+  inviteToken = params.get('token');
+
+  if (!inviteToken) {
+    document.getElementById('error-msg').textContent = '招待リンクが無効です。管理者にURLを確認してください。';
+    showView('error-view');
+    return;
+  }
+
+  try {
+    const r = await fetch(API + '/invite/' + inviteToken);
+    const d = await r.json();
+    if (!r.ok) {
+      document.getElementById('error-msg').textContent = d.error || '無効な招待リンクです';
+      showView('error-view');
+      return;
+    }
+
+    defaultStoreId = d.default_store_id;
+    document.getElementById('store-label').textContent = d.default_store_name;
+
+    // 店舗ドロップダウン
+    const sel = document.getElementById('reg-store');
+    sel.innerHTML = d.stores.map(s =>
+      `<option value="${s.id}" ${s.id === d.default_store_id ? 'selected' : ''}>${s.name}</option>`
+    ).join('');
+
+    // 有効期限表示
+    const exp = new Date(d.expires_at);
+    document.getElementById('expires-label').textContent =
+      `この招待リンクの有効期限: ${exp.getFullYear()}/${exp.getMonth()+1}/${exp.getDate()} ${exp.getHours()}:${String(exp.getMinutes()).padStart(2,'0')}`;
+
+    showView('register-view');
+  } catch (e) {
+    document.getElementById('error-msg').textContent = 'サーバーに接続できません。';
+    showView('error-view');
+  }
+}
+
+async function doRegister() {
+  const staffId = document.getElementById('reg-id').value.trim();
+  const name = document.getElementById('reg-name').value.trim();
+  const storeId = document.getElementById('reg-store').value;
+  const pw = document.getElementById('reg-pw').value;
+  const pw2 = document.getElementById('reg-pw2').value;
+
+  if (!staffId || !name || !pw) {
+    toast('すべての項目を入力してください', true);
+    return;
+  }
+  if (pw !== pw2) {
+    toast('パスワードが一致しません', true);
+    return;
+  }
+  if (pw.length < 4) {
+    toast('パスワードは4文字以上にしてください', true);
+    return;
+  }
+
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true;
+  btn.textContent = '登録中...';
+
+  try {
+    const r = await fetch(API + '/invite/' + inviteToken + '/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staff_id: staffId, name, store_id: storeId, password: pw })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || '登録に失敗しました');
+
+    document.getElementById('success-msg').textContent = d.message || `${name}さんの登録が完了しました！`;
+    showView('success-view');
+  } catch (e) {
+    toast(e.message, true);
+    btn.disabled = false;
+    btn.textContent = '登録する';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
