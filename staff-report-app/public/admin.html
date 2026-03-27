@@ -126,6 +126,23 @@
   <!-- === スタッフタブ === -->
   <div class="tab-content" id="tab-staff">
     <div class="card">
+      <h2>&#128279; スタッフ招待リンク</h2>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">招待リンクを発行してスタッフに共有すると、スタッフ自身で登録できます（1週間有効）。</p>
+      <div class="row">
+        <div class="field"><label>店舗</label><select id="invite-store"></select></div>
+        <div class="field"><label>有効期間（日）</label><input id="invite-days" type="number" value="7" min="1" max="30"></div>
+      </div>
+      <button class="btn btn-accent btn-sm mt-8" onclick="generateInvite()">招待リンクを発行</button>
+      <div id="invite-result" style="display:none;margin-top:14px;">
+        <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:12px;">
+          <label style="font-size:11px;color:var(--gray-600);">招待URL（タップでコピー）</label>
+          <div id="invite-url" onclick="copyInviteUrl()" style="font-size:13px;font-family:monospace;word-break:break-all;cursor:pointer;padding:8px;background:var(--white);border:1px dashed var(--gray-200);border-radius:6px;margin-top:4px;"></div>
+          <p style="font-size:11px;color:var(--gray-400);margin-top:6px;" id="invite-expires"></p>
+        </div>
+      </div>
+      <div id="invite-list" style="margin-top:14px;"></div>
+    </div>
+    <div class="card">
       <h2>&#128101; スタッフ一覧</h2>
       <table>
         <thead><tr><th>ID</th><th>名前</th><th>店舗</th><th>役割</th><th></th></tr></thead>
@@ -133,7 +150,7 @@
       </table>
     </div>
     <div class="card">
-      <h2>&#10133; スタッフを追加</h2>
+      <h2>&#10133; スタッフを追加（手動）</h2>
       <div class="row">
         <div class="field"><label>スタッフID</label><input id="new-staff-id" placeholder="yamada_hanako"></div>
         <div class="field"><label>名前</label><input id="new-staff-name" placeholder="山田 花子"></div>
@@ -176,7 +193,6 @@
     </div>
   </div>
 </div>
-
 <script>
 const API = '/api';
 let token = localStorage.getItem('adminToken') || '';
@@ -262,7 +278,9 @@ async function loadAll() {
     // Store selects
     const storeOpts = st.stores.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
     document.getElementById('new-staff-store').innerHTML = storeOpts;
+    document.getElementById('invite-store').innerHTML = storeOpts;
     document.getElementById('line-test-store').innerHTML = storeOpts;
+    loadInvites();
 
     // Staff list (from all stores)
     loadStaff(st.stores);
@@ -270,8 +288,6 @@ async function loadAll() {
 }
 
 async function loadStaff(stores) {
-  // Use a simple approach: query overview per store won't give staff list
-  // We'll fetch from a dedicated endpoint
   try {
     const d = await api('/admin/staff/list');
     document.getElementById('staff-body').innerHTML = d.staff.map(s =>
@@ -280,7 +296,6 @@ async function loadStaff(stores) {
        <td><button class="btn btn-danger btn-sm" onclick="deleteStaff('${s.id}','${s.name}')">削除</button></td></tr>`
     ).join('');
   } catch (e) {
-    // Fallback if endpoint doesn't exist yet
     document.getElementById('staff-body').innerHTML = '<tr><td colspan="4" style="color:var(--gray-400);text-align:center;">読み込み中...</td></tr>';
   }
 }
@@ -382,6 +397,51 @@ async function doSetup() {
     toast(d.message);
     document.getElementById('setup-view').style.display = 'none';
     document.getElementById('login-view').style.display = 'block';
+  } catch (e) { toast(e.message, true); }
+}
+
+// === INVITE ===
+async function generateInvite() {
+  try {
+    const d = await api('/admin/invite', { method: 'POST', body: JSON.stringify({
+      store_id: document.getElementById('invite-store').value,
+      days: parseInt(document.getElementById('invite-days').value) || 7
+    })});
+    const url = location.origin + '/register.html?token=' + d.token;
+    document.getElementById('invite-url').textContent = url;
+    const exp = new Date(d.expires_at);
+    document.getElementById('invite-expires').textContent =
+      `${d.store_name} | 有効期限: ${exp.getFullYear()}/${exp.getMonth()+1}/${exp.getDate()} ${exp.getHours()}:${String(exp.getMinutes()).padStart(2,'0')}`;
+    document.getElementById('invite-result').style.display = 'block';
+    toast('招待リンクを発行しました');
+    loadInvites();
+  } catch (e) { toast(e.message, true); }
+}
+
+function copyInviteUrl() {
+  const url = document.getElementById('invite-url').textContent;
+  navigator.clipboard.writeText(url).then(() => toast('URLをコピーしました'));
+}
+
+async function loadInvites() {
+  try {
+    const d = await api('/admin/invite/list');
+    const now = new Date();
+    document.getElementById('invite-list').innerHTML = d.tokens.filter(t => new Date(t.expires_at) > now).map(t => {
+      const exp = new Date(t.expires_at);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--gray-50);border:1px solid var(--gray-100);border-radius:6px;margin-bottom:6px;font-size:12px;">
+        <div><strong>${t.store_name}</strong> <span style="color:var(--gray-400);">| ${t.use_count}名登録済 | ~${exp.getMonth()+1}/${exp.getDate()}</span></div>
+        <button class="btn btn-danger btn-sm" onclick="deleteInvite(${t.id})" style="padding:3px 10px;font-size:11px;">無効化</button>
+      </div>`;
+    }).join('');
+  } catch (e) { /* ignore */ }
+}
+
+async function deleteInvite(id) {
+  try {
+    await api('/admin/invite/' + id, { method: 'DELETE' });
+    toast('招待リンクを無効化しました');
+    loadInvites();
   } catch (e) { toast(e.message, true); }
 }
 
