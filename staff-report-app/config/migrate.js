@@ -67,6 +67,19 @@ function runMigrations() {
       error_message   TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS invite_tokens (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      token           TEXT NOT NULL UNIQUE,
+      store_id        TEXT REFERENCES stores(id),
+      created_by      TEXT NOT NULL REFERENCES staff(id),
+      expires_at      TEXT NOT NULL,
+      max_uses        INTEGER DEFAULT 0,
+      use_count       INTEGER DEFAULT 0,
+      is_active       INTEGER DEFAULT 1,
+      created_at      TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_invite_tokens_token ON invite_tokens(token);
     CREATE INDEX IF NOT EXISTS idx_feedbacks_staff ON feedbacks(staff_id);
     CREATE INDEX IF NOT EXISTS idx_reports_yearmonth ON reports(year_month);
     CREATE INDEX IF NOT EXISTS idx_reports_store ON reports(store_id, year_month);
