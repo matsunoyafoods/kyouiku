@@ -81,6 +81,81 @@ app.post('/api/line/webhook', (req, res) => {
   }
 });
 
+// ===== 招待リンク経由のスタッフ自己登録 =====
+// GET: トークン検証（登録ページ用）
+app.get('/api/invite/:token', (req, res) => {
+  const { getDB } = require('./config/database');
+  const db = getDB();
+  const invite = db.prepare(`
+    SELECT t.*, s.name as store_name
+    FROM invite_tokens t JOIN stores s ON t.store_id = s.id
+    WHERE t.token = ? AND t.is_active = 1
+  `).get(req.params.token);
+
+  if (!invite) return res.status(404).json({ error: '無効な招待リンクです' });
+  if (new Date(invite.expires_at) < new Date()) {
+    return res.status(410).json({ error: 'この招待リンクは期限切れです' });
+  }
+
+  // 店舗一覧を返す（ドロップダウン用）
+  const stores = db.prepare('SELECT id, name FROM stores ORDER BY name').all();
+  res.json({
+    valid: true,
+    default_store_id: invite.store_id,
+    default_store_name: invite.store_name,
+    stores,
+    expires_at: invite.expires_at
+  });
+});
+
+// POST: スタッフ自己登録
+app.post('/api/invite/:token/register', (req, res) => {
+  try {
+    const { getDB } = require('./config/database');
+    const bcrypt = require('bcryptjs');
+    const db = getDB();
+
+    const invite = db.prepare(`
+      SELECT * FROM invite_tokens WHERE token = ? AND is_active = 1
+    `).get(req.params.token);
+
+    if (!invite) return res.status(404).json({ error: '無効な招待リンクです' });
+    if (new Date(invite.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'この招待リンクは期限切れです' });
+    }
+
+    const { staff_id, name, store_id, password } = req.body;
+    if (!staff_id || !name || !store_id || !password) {
+      return res.status(400).json({ error: 'スタッフID、名前、店舗、パスワードは必須です' });
+    }
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'パスワードは4文字以上にしてください' });
+    }
+
+    // 店舗存在チェック
+    const store = db.prepare('SELECT id FROM stores WHERE id = ?').get(store_id);
+    if (!store) return res.status(400).json({ error: '指定された店舗が存在しません' });
+
+    // ID重複チェック
+    const existing = db.prepare('SELECT id FROM staff WHERE id = ?').get(staff_id);
+    if (existing) return res.status(400).json({ error: 'このスタッフIDは既に使われています' });
+
+    const hash = bcrypt.hashSync(password, 10);
+    const tx = db.transaction(() => {
+      db.prepare(`
+        INSERT INTO staff (id, store_id, name, password_hash, role)
+        VALUES (?, ?, ?, ?, 'staff')
+      `).run(staff_id, store_id, name, hash);
+      db.prepare('UPDATE invite_tokens SET use_count = use_count + 1 WHERE id = ?').run(invite.id);
+    });
+    tx();
+
+    res.json({ success: true, message: `${name}さんの登録が完了しました！` });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // セットアップ状態確認
 app.get('/api/setup/status', (req, res) => {
   const { getDB } = require('./config/database');
