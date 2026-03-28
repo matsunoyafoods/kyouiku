@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --black: #0a0a0a; --white: #fff; --accent: #f5c842; --gray-50: #f9f9f8; --gray-100: #f0efeb; --gray-200: #e0dedb; --gray-400: #b0aca6; --gray-600: #6b6760; --radius: 12px; --font: 'Noto Sans JP', sans-serif; }
+  :root { --black: #0a0a0a; --white: #fff; --accent: #f5c842; --gray-50: #f9f9f8; --gray-100: #f0efeb; --gray-200: #e0dedb; --gray-400: #b0aca6; --gray-600: #6b6760; --gray-800: #3a3935; --radius: 12px; --font: 'Noto Sans JP', sans-serif; }
   body { font-family: var(--font); background: var(--gray-50); color: var(--black); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
   .container { max-width: 440px; width: 100%; }
   .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 28px 24px; }
@@ -33,13 +33,26 @@
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--black); color: var(--white); padding: 12px 24px; border-radius: 10px; font-size: 14px; z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.error { background: #d85a30; }
+  .lang-switcher{position:relative;display:inline-block}
+  .lang-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--gray-200);border-radius:20px;background:var(--white);color:var(--gray-800);font-size:13px;cursor:pointer;transition:.22s cubic-bezier(.4,0,.2,1)}
+  .lang-btn:hover{border-color:var(--gray-400);background:var(--gray-50)}
+  .lang-btn .flag{font-size:16px;line-height:1}
+  .lang-btn .arrow{font-size:10px;opacity:.6;transition:transform .2s}
+  .lang-btn .arrow.open{transform:rotate(180deg)}
+  .lang-dropdown{position:absolute;top:calc(100% + 6px);right:0;min-width:180px;background:var(--white);border:1px solid var(--gray-200);border-radius:10px;padding:4px;box-shadow:0 8px 40px rgba(0,0,0,.14);opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .18s,transform .18s;z-index:999}
+  .lang-dropdown.show{opacity:1;transform:translateY(0);pointer-events:auto}
+  .lang-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;color:var(--gray-800);font-size:13px;cursor:pointer;transition:background .15s}
+  .lang-item:hover{background:var(--gray-100)}
+  .lang-item.active{background:rgba(245,200,66,.1);color:#d4a800}
 </style>
 </head>
 <body>
 <div class="container">
+  <div id="reg-lang-switcher" style="text-align:center;margin-bottom:12px"></div>
+
   <!-- ローディング -->
   <div id="loading-view" class="card" style="text-align:center;padding:40px;">
-    <p style="color:var(--gray-400);">読み込み中...</p>
+    <p style="color:var(--gray-400);" data-i18n="reg.loading"></p>
   </div>
 
   <!-- エラー（無効/期限切れ） -->
@@ -47,7 +60,7 @@
     <div class="card">
       <div class="error-box">
         <p style="font-size:24px;margin-bottom:8px;">&#9888;&#65039;</p>
-        <p id="error-msg">無効な招待リンクです</p>
+        <p id="error-msg" data-i18n="reg.error_invalid"></p>
       </div>
     </div>
   </div>
@@ -55,37 +68,37 @@
   <!-- 登録フォーム -->
   <div id="register-view" style="display:none;">
     <div class="card">
-      <h1>&#128221; スタッフ登録</h1>
-      <p class="subtitle">招待リンクからのスタッフ自己登録</p>
+      <h1 data-i18n="reg.title"></h1>
+      <p class="subtitle" data-i18n="reg.subtitle"></p>
 
       <div class="info-box">
-        所属店舗: <strong id="store-label"></strong><br>
-        下記フォームに入力して登録してください。
+        <span data-i18n="reg.store_info"></span> <strong id="store-label"></strong><br>
+        <span data-i18n="reg.store_instruct"></span>
       </div>
 
       <div class="field">
-        <label>スタッフID（ログイン時に使用）</label>
-        <input id="reg-id" placeholder="例: yamada" autocomplete="off">
-        <div class="hint">ログイン時に使うIDです。お好きなIDを入力してください</div>
+        <label data-i18n="reg.id_label"></label>
+        <input id="reg-id" data-i18n-ph="reg.id_ph" autocomplete="off">
+        <div class="hint" data-i18n="reg.id_hint"></div>
       </div>
       <div class="field">
-        <label>名前</label>
-        <input id="reg-name" placeholder="例: 山田 太郎">
+        <label data-i18n="reg.name_label"></label>
+        <input id="reg-name" data-i18n-ph="reg.name_ph">
       </div>
       <div class="field">
-        <label>所属店舗</label>
+        <label data-i18n="reg.store_label"></label>
         <select id="reg-store"></select>
       </div>
       <div class="field">
-        <label>パスワード</label>
-        <input id="reg-pw" type="password" placeholder="4文字以上">
+        <label data-i18n="reg.pw_label"></label>
+        <input id="reg-pw" type="password" data-i18n-ph="reg.pw_ph">
       </div>
       <div class="field">
-        <label>パスワード（確認）</label>
-        <input id="reg-pw2" type="password" placeholder="もう一度入力">
+        <label data-i18n="reg.pw2_label"></label>
+        <input id="reg-pw2" type="password" data-i18n-ph="reg.pw2_ph">
       </div>
 
-      <button class="btn btn-primary" id="reg-btn" onclick="doRegister()">登録する</button>
+      <button class="btn btn-primary" id="reg-btn" onclick="doRegister()" data-i18n="reg.btn"></button>
       <p class="expires" id="expires-label"></p>
     </div>
   </div>
@@ -94,16 +107,19 @@
   <div id="success-view" style="display:none;">
     <div class="card">
       <div class="success-box">
-        <p style="font-size:32px;margin-bottom:12px;">&#127881;</p>
-        <h2>登録完了！</h2>
-        <p id="success-msg">スタッフ登録が完了しました。</p>
-        <a class="login-link" href="/">レポート画面にログイン</a>
+        <p style="font-size:32px;margin-bottom:12px;" data-i18n="reg.success_title"></p>
+        <h2 data-i18n="reg.success_heading"></h2>
+        <p id="success-msg" data-i18n="reg.success_msg"></p>
+        <a class="login-link" href="/" data-i18n="reg.login_link"></a>
       </div>
     </div>
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
+
+<script src="translations.js"></script>
+<script src="i18n.js"></script>
 
 <script>
 const API = '/api';
@@ -124,11 +140,14 @@ function showView(id) {
 }
 
 async function init() {
+  I18N.init();
+  I18N.createSwitcher('reg-lang-switcher');
+
   const params = new URLSearchParams(window.location.search);
   inviteToken = params.get('token');
 
   if (!inviteToken) {
-    document.getElementById('error-msg').textContent = '招待リンクが無効です。管理者にURLを確認してください。';
+    document.getElementById('error-msg').textContent = I18N.t('reg.error_notoken');
     showView('error-view');
     return;
   }
@@ -137,7 +156,7 @@ async function init() {
     const r = await fetch(API + '/invite/' + inviteToken);
     const d = await r.json();
     if (!r.ok) {
-      document.getElementById('error-msg').textContent = d.error || '無効な招待リンクです';
+      document.getElementById('error-msg').textContent = d.error || I18N.t('reg.error_invalid');
       showView('error-view');
       return;
     }
@@ -151,12 +170,13 @@ async function init() {
     ).join('');
 
     const exp = new Date(d.expires_at);
+    const expiresText = I18N.t('reg.expires');
     document.getElementById('expires-label').textContent =
-      `この招待リンクの有効期限: ${exp.getFullYear()}/${exp.getMonth()+1}/${exp.getDate()} ${exp.getHours()}:${String(exp.getMinutes()).padStart(2,'0')}`;
+      `${expiresText} ${exp.getFullYear()}/${exp.getMonth()+1}/${exp.getDate()} ${exp.getHours()}:${String(exp.getMinutes()).padStart(2,'0')}`;
 
     showView('register-view');
   } catch (e) {
-    document.getElementById('error-msg').textContent = 'サーバーに接続できません。';
+    document.getElementById('error-msg').textContent = I18N.t('reg.error_connect');
     showView('error-view');
   }
 }
@@ -169,21 +189,21 @@ async function doRegister() {
   const pw2 = document.getElementById('reg-pw2').value;
 
   if (!staffId || !name || !pw) {
-    toast('すべての項目を入力してください', true);
+    toast(I18N.t('msg.fill_all'), true);
     return;
   }
   if (pw !== pw2) {
-    toast('パスワードが一致しません', true);
+    toast(I18N.t('msg.pw_mismatch'), true);
     return;
   }
   if (pw.length < 4) {
-    toast('パスワードは4文字以上にしてください', true);
+    toast(I18N.t('msg.pw_short'), true);
     return;
   }
 
   const btn = document.getElementById('reg-btn');
   btn.disabled = true;
-  btn.textContent = '登録中...';
+  btn.textContent = I18N.t('reg.registering');
 
   try {
     const r = await fetch(API + '/invite/' + inviteToken + '/register', {
@@ -192,16 +212,24 @@ async function doRegister() {
       body: JSON.stringify({ staff_id: staffId, name, store_id: storeId, password: pw })
     });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.error || '登録に失敗しました');
+    if (!r.ok) throw new Error(d.error || I18N.t('reg.error_invalid'));
 
-    document.getElementById('success-msg').textContent = d.message || `${name}さんの登録が完了しました！`;
+    document.getElementById('success-msg').textContent = d.message || I18N.t('reg.success_msg');
     showView('success-view');
   } catch (e) {
     toast(e.message, true);
     btn.disabled = false;
-    btn.textContent = '登録する';
+    btn.textContent = I18N.t('reg.btn');
   }
 }
+
+document.addEventListener('langchange', () => {
+  I18N.applyAll();
+  const btn = document.getElementById('reg-btn');
+  if (btn && !btn.disabled) {
+    btn.textContent = I18N.t('reg.btn');
+  }
+});
 
 init();
 </script>
